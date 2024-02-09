@@ -67,7 +67,7 @@ webextools disable-users -f users.csv -c email -r -v
 ## 2. Recording audit report
 
 The Recording Audit Reporting Tool provides an audit report for Webex recordings over a specified period.
-You can customize the reporting period and save the results to a JSON file.
+You can customize the reporting period and save the results to a CSV file.
 This tool is ideal for monitoring and analyzing recording activities.
 
 ### Usage:
