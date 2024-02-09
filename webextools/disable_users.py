@@ -7,7 +7,7 @@ from datetime import datetime
 
 from webexteamssdk import ApiError, Person, WebexTeamsAPI
 
-from helper import get_token, read_csv, verbose
+from webextools.helper import get_token, read_csv, verbose
 
 
 def disable_users(api: WebexTeamsAPI, people: list[Person]) -> list[dict]:
@@ -89,7 +89,7 @@ def get_emails_from_csv(args: argparse.Namespace) -> list[str]:
     return emails
 
 
-def main(args: argparse.Namespace) -> None:
+def disable_users_main(args: argparse.Namespace) -> None:
     """
     Main function to disable inactive Webex Teams users.
 
@@ -101,9 +101,6 @@ def main(args: argparse.Namespace) -> None:
 
     emails = get_emails_from_csv(args)
     people = get_people(api, emails)
-
-    if args.verbose:
-        os.environ["VERBOSE"] = "1"
 
     if not people:
         print("No users found in the Webex Teams.")
@@ -124,9 +121,7 @@ def main(args: argparse.Namespace) -> None:
 def parse_args():
     parser = argparse.ArgumentParser(description="Disable Webex Teams users.")
     parser.add_argument("--file", "-f", help="CSV file with users data", required=True)
-    parser.add_argument(
-        "--column", "-c", help="Column name to use for user email", default="email"
-    )
+    parser.add_argument("--column", "-c", help="Column name to use for user email", default="email")
     parser.add_argument(
         "--report",
         "-r",
@@ -134,10 +129,14 @@ def parse_args():
         help="Write the report to the file",
     )
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
+
+    if args.verbose:
+        os.environ["VERBOSE"] = "1"
+
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     args = parse_args()
 
-    main(args)
+    disable_users_main(args)

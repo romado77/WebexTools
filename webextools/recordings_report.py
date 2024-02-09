@@ -1,11 +1,12 @@
 """ This is module to generate a report of Webex Teams users who requested recording data. """
 import argparse
 import json
+import os
 import sys
 
 from webexteamssdk import ApiError, WebexTeamsAPI
 
-from helper import generate_time_ranges, get_token, write_csv
+from webextools.helper import generate_time_ranges, get_token, write_csv
 
 
 def get_recording_report(api: WebexTeamsAPI, _from: str, to: str):
@@ -18,9 +19,7 @@ def get_recording_report(api: WebexTeamsAPI, _from: str, to: str):
     """
 
     try:
-        response = api.recording_report.access_summary(
-            hostEmail="all", _from=_from, to=to
-        )
+        response = api.recording_report.access_summary(hostEmail="all", _from=_from, to=to)
 
         return [res.to_dict() for res in response]
     except ApiError as e:
@@ -133,8 +132,14 @@ def prepare_summary_report(api: WebexTeamsAPI, time_ranges: list) -> list:
     return [] if not summary_report else summary_report
 
 
-def main(args: argparse.Namespace):
+def recording_report_main(args: argparse.Namespace):
     detailed_report = []
+
+    if args.period > 365 or args.span > 90:
+        print(
+            "Error: Invalid argument values. Please check the specified values for period and span."
+        )
+        sys.exit(1)
 
     token = get_token()
 
@@ -163,17 +168,11 @@ def main(args: argparse.Namespace):
         if filename:
             print("Report was saved to", filename)
 
-    if args.verbose:
+    if os.getenv("VERBOSE") is not None:
         print(json.dumps(detailed_report, indent=4))
 
 
 if __name__ == "__main__":
     args = parse_arguments()
 
-    if args.period > 365 or args.span > 90:
-        print(
-            "Error: Invalid argument values. Please check the specified values for period and span."
-        )
-        sys.exit(1)
-
-    main(args)
+    recording_report_main(args)

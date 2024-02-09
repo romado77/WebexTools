@@ -61,8 +61,7 @@ def read_csv(filename: str, columns: Optional[list]) -> list:
         return data
 
     return [
-        {k.strip().lower(): v for k, v in row.items() if k.strip().lower() in columns}
-        for row in data
+        {k.strip().lower(): v for k, v in row.items() if k.strip().lower() in columns} for row in data
     ]
 
 
