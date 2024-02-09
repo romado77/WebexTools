@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=61.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "webextools"
+version = "0.1.0"
+description = "A collection of command-line tools for Cisco Webex"
+authors = [
+    {name = "Roman Dolgushev", email = "drv@cisco.com"}
+]
+
+classifiers = [
+    "programming language :: Python :: 3",
+    "license :: OSI Approved :: MIT License",
+    "operating system :: OS Independent"
+]
+requires-python = ">=3.9"
+dependencies = [
+    "webexteamssdk @ git+https://github.com/romado77/WebexPythonSDK.git"
+]
+
+[project.readme]
+file = "README.md"
+content-type = "text/markdown"
+
+[project.urls]
+Homepage = "https://github.com/romado77/WebexTools.git"
+
+[project.optional-dependencies]
+dev = [
+    "ruff",
+    "pytest",
+]
+
+[tool.setuptools.packages]
+find = {}
+
+[tool.ruff]
+line-length = 102
+
+[project.scripts]
+webextools = "webextools:main"
+
