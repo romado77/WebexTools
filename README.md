@@ -80,8 +80,6 @@ webextools recording-report
 
 > --period PERIOD, -p PERIOD _Recording report period in days (default 90 days, max 365 days)_
 >
-> --span SPAN, -s SPAN _Recording report span in days (default 7 days, max 90 days)_
->
 > --write FILENAME, -w FILENAME _Specify the file name to write the report_
 >
 > --verbose, -v _Verbose output_
@@ -89,7 +87,7 @@ webextools recording-report
 ### Example of run command:
 
 ```sh
-webextools recording-report -p 90 -s 7 -w report -v
+webextools recording-report -p 90 -w report -v
 ```
 
 #### Notes:
