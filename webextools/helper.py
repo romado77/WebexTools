@@ -110,7 +110,7 @@ def file_exists(filename: str) -> bool:
     return os.path.isfile(filename)
 
 
-def generate_time_ranges(total_days: int = 90, span: int = 7) -> list:
+def generate_time_ranges(total_days: int = 0, span: int = 0) -> list:
     """
     Generate time ranges for the specified number of days.
 
@@ -118,8 +118,11 @@ def generate_time_ranges(total_days: int = 90, span: int = 7) -> list:
     :param span: number of days for each range.
     :return: list of time ranges.
     """
-    if total_days > 365 or span > 90:
-        raise ValueError("Total days must be <= 365 and chunk days must be <= 90")
+    if not total_days or not span:
+        raise ValueError("Invalid value for total_days or span.")
+
+    if total_days < span:
+        span = total_days
 
     current_time = datetime.now()
     time_ranges = []

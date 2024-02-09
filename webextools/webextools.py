@@ -39,13 +39,6 @@ def main():
         help="Recording report period in days (default 90 days, max 365 days)",
     )
     recording_report_parser.add_argument(
-        "--span",
-        "-s",
-        type=int,
-        default=7,
-        help="Recording report span in days (default 7 days, max 90 days)",
-    )
-    recording_report_parser.add_argument(
         "--write",
         "-w",
         type=str,

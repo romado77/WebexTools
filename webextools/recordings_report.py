@@ -59,13 +59,6 @@ def parse_arguments():
         help="Recording report period in days (default 90 days, max 365 days)",
     )
     parser.add_argument(
-        "--span",
-        "-s",
-        type=int,
-        default=7,
-        help="Recording report span in days (default 7 days, max 90 days)",
-    )
-    parser.add_argument(
         "--write",
         "-w",
         type=str,
@@ -135,17 +128,15 @@ def prepare_summary_report(api: WebexTeamsAPI, time_ranges: list) -> list:
 def recording_report_main(args: argparse.Namespace):
     detailed_report = []
 
-    if args.period > 365 or args.span > 90:
-        print(
-            "Error: Invalid argument values. Please check the specified values for period and span."
-        )
+    if args.period > 365:
+        print("Error: Invalid value for period. The maximum value for period is 365 days.")
         sys.exit(1)
 
     token = get_token()
 
     api = WebexTeamsAPI(access_token=token)
 
-    time_ranges = generate_time_ranges(total_days=args.period, span=args.span)
+    time_ranges = generate_time_ranges(total_days=args.period, span=90)
 
     summary_report = prepare_summary_report(api, time_ranges)
 
@@ -166,7 +157,7 @@ def recording_report_main(args: argparse.Namespace):
         filename = write_csv(detailed_report, args.write)
 
         if filename:
-            print("Report was saved to", filename)
+            print("Report was saved to", os.path.abspath(filename))
 
     if os.getenv("VERBOSE") is not None:
         print(json.dumps(detailed_report, indent=4))
