@@ -80,7 +80,7 @@ def write_csv(data: list[dict], csv_filename) -> str:
         csv_filename += ".csv"
 
     try:
-        with open(csv_filename, "w", newline="") as csv_file:
+        with open(csv_filename, "w", newline="", encoding="utf-8") as csv_file:
             writer = csv.DictWriter(csv_file, fieldnames=keys)
 
             writer.writeheader()
