@@ -60,9 +60,7 @@ def read_csv(filename: str, columns: Optional[list]) -> list:
     if not columns:
         return data
 
-    return [
-        {k.strip().lower(): v for k, v in row.items() if k.strip().lower() in columns} for row in data
-    ]
+    return [{k.strip(): v for k, v in row.items() if k.strip() in columns} for row in data]
 
 
 def write_csv(data: list[dict], csv_filename) -> str:
