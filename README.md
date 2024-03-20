@@ -33,36 +33,36 @@ webextools disable-users
 
 #### Run options:
 
-> --file FILE, -f FILE CSV _file with users data_
+> --file FILE, -f FILE CSV _File with users data_
 >
-> --column COLUMN, -c COLUMN _Column name to use for user email_
+> --column COLUMN, -c COLUMN _Column name for user email_
 >
-> --report, -r _Write the report to the file_
+> --report, -r _Save the report to the file_
 >
 > --verbose, -v _Verbose output_
 
 ### Example of CSV file:
 
 ```csv
-email,username
-test@test.com,Test User
+First Name,Last Name,Display Name,User ID/Email (Required),User Status,...
+Test,User,Test User,test@test.com,Active,...
 ```
 
 ### Example of run command:
 
 ```sh
 
-webextools disable-users -f users.csv -c email -r -v
+webextools disable-users -f users.csv -c "User ID/Email (Required)" -r -v
 
 ```
 
 #### Notes:
 
-> Option `-c email` could be omitted if the column name with email addresses, in CSV file, is `email`
+> The `-c` option can be omitted if the column containing email addresses in the CSV file is named `email`.
 >
-> If option `-r` presents, report, for each operation, will be saved to the file `disabled_users_report-{datetime}.json` in current directory.
+> If the `-r` option is provided, the report for each operation will be saved to a file named `disabled_users_report-{datetime}.json` in current directory.
 >
-> If option `-v` presents, verbose output will be enabled and each user operation will be printed to the console.
+> If the `-v` option is provided, verbose output will be enabled and each user operation will be printed to the console.
 
 ## 2. Recording audit report
 

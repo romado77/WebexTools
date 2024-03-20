@@ -1,4 +1,5 @@
-""" This is module to disable Webex Teams users from the CSV file."""
+"""This is module to disable Webex Teams users from the CSV file."""
+
 import argparse
 import json
 import os
@@ -79,11 +80,12 @@ def get_emails_from_csv(args: argparse.Namespace) -> list[str]:
     :param args: argparse.Namespace object
     :return: list of user emails
     """
-    users = read_csv(args.file, args.column)
-    emails = [user["email"] for user in users if user.get("email", "")]
+    email = args.column
+    users = read_csv(args.file, email)
+    emails = [user[email] for user in users if user.get(email, "")]
 
     if not emails:
-        print("No users found in the CSV file.")
+        print(f"No users found in the column '{email}' of the CSV file.")
         exit(1)
 
     return emails
