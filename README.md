@@ -48,6 +48,10 @@ First Name,Last Name,Display Name,User ID/Email (Required),User Status,...
 Test,User,Test User,test@test.com,Active,...
 ```
 
+#### Note:
+
+> Only column with user email is required in the CSV file, all other columns are optional and will be ignored.
+
 ### Example of run command:
 
 ```sh
@@ -58,8 +62,6 @@ webextools disable-users -f users.csv -c "User ID/Email (Required)" -r -v
 
 #### Notes:
 
-> Only column with user email is required in the CSV file, all other columns are optional and will be ignored.
->
 > The `-c` option can be omitted if the column containing email addresses in the CSV file is named `email`.
 >
 > If the `-r` option is provided, the report for each operation will be saved to a file named `disabled_users_report-{datetime}.json` in current directory.
