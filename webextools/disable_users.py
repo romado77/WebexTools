@@ -153,11 +153,7 @@ def disable_users_main(args: argparse.Namespace) -> None:
         exit(1)
 
     if args.dry_run:
-        print("\033[91m\nDry run mode is enabled, no users will be deleted!\n\033[0m")
-
-        for person in people:
-            print(f"Disabling user: {person.displayName} ({person.emails[0]})")
-        exit(0)
+        dry_run(people)
 
     disabled_users = disable_users(api, people)
 
@@ -169,6 +165,42 @@ def disable_users_main(args: argparse.Namespace) -> None:
             json.dump(disabled_users, f, indent=4)
 
         print(f"\nReport written to {os.path.abspath(filename)}\n")
+
+
+def dry_run(people: list[Person]) -> None:
+    """
+    Dry run to print the users data.
+
+    :param people: list of Person objects
+    """
+    print("\033[91m\nDry run mode is enabled, no users will be deleted!\n\033[0m")
+
+    data = [
+        {
+            "displayName": person.displayName,
+            "email": person.emails[0],
+            "enabled": "\033[92m\u2713\033[0m" if person.loginEnabled else "\033[91m\u2717\033[0m",
+        }
+        for person in people
+    ]
+
+    print("-" * 82)
+    print("| {:^30} | {:^30} | {:^12} |".format("User name", "Email", "Login Allowed"))
+    print("-" * 82)
+
+    for row in data:
+        print(f"| {row['displayName']: <30} | {row['email']: <30} | {row['enabled']: ^22} |")
+        print("-" * 82)
+        # for person in people:
+        #     if person.loginEnabled:
+        #         print(
+        #             f"Disabling user: {person.displayName} ({person.emails[0]}) [\033[92mLogin allowed\033[0m]"
+        #         )
+        #     else:
+        #         print(
+        #             f"Disabling user: {person.displayName} ({person.emails[0]}) [\033[91mLogin disabled\033[0m]"
+        #         )
+    exit(0)
 
 
 def parse_args():
