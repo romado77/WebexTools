@@ -25,6 +25,7 @@ def main():
     )
 
     disable_users_parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
+    disable_users_parser.add_argument("--dry-run", "-d", action="store_true", help="Dry run mode")
     disable_users_parser.set_defaults(func=disable_users_main)
 
     recording_report_parser = subparsers.add_parser(

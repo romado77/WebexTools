@@ -152,6 +152,13 @@ def disable_users_main(args: argparse.Namespace) -> None:
         print("No users found in the Webex Teams.")
         exit(1)
 
+    if args.dry_run:
+        print("\033[91m\nDry run mode is enabled, no users will be deleted!\n\033[0m")
+
+        for person in people:
+            print(f"Disabling user: {person.displayName} ({person.emails[0]})")
+        exit(0)
+
     disabled_users = disable_users(api, people)
 
     if args.report:
