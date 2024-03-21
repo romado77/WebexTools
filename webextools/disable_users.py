@@ -125,7 +125,6 @@ def exclude_calling_licenses(licenses: list[str]) -> list[str]:
             license += "=" * (4 - len(license) % 4)
 
         decoded_license = base64.b64decode(license).decode("utf-8")
-        print(decoded_license)
 
         if "UCPREM_" in decoded_license or "BCSTD_" in decoded_license:
             continue
