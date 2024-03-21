@@ -1,4 +1,5 @@
 import csv
+import getpass
 import os
 from datetime import datetime, timedelta
 from typing import Optional
@@ -150,7 +151,9 @@ def get_token() -> str:
     if token is not None:
         return token
 
-    token = input("\nEnter your Webex API access token: ")
+    print()
+    token = getpass.getpass(" Enter your Webex API access token \U0001f511  : ")
+    print()
 
     if not token.strip():
         print("Invalid token provided.")

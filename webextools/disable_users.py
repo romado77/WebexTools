@@ -1,6 +1,7 @@
 """This is module to disable Webex Teams users from the CSV file."""
 
 import argparse
+import base64
 import json
 import os
 import sys
@@ -23,22 +24,38 @@ def disable_users(api: WebexTeamsAPI, people: list[Person]) -> list[dict]:
     users = []
 
     for person in people:
-        p = json.loads(person.to_json())
-        p.update({"loginEnable": False, "callingData": False, "personId": person.id})
+        person_dict = json.loads(person.to_json())
+
+        login_enabled = person_dict.get("loginEnabled", False)
 
         status = {
             "personId": person.id,
             "displayName": person.displayName,
             "email": person.emails[0],
-            "status": "Disabled",
+            "loginEnabled": login_enabled,
         }
 
+        if not login_enabled:
+            verbose(
+                f"\033[93m[Skipped]\033[0m User is already disabled: {person.displayName} ({person.emails[0]})"
+            )
+            status["update"] = "Skipped"
+            users.append(status)
+            continue
+
+        licenses = exclude_calling_licenses(person.licenses)
+
+        person_dict.update(
+            {"loginEnabled": False, "personId": person.id, "licenses": licenses, "phoneNumbers": []}
+        )
+
         try:
-            api.people.update(**p)
+            api.people.update(**person_dict)
             verbose(
                 f"\033[92m[Success]\033[0m Disabling user: {person.displayName} ({person.emails[0]})"
             )
             status["update"] = "Success"
+            status["loginEnabled"] = False
         except ApiError:
             verbose(
                 f"\033[91m[Failed]\033[0m Unable to disable user: {person.displayName} ({person.emails[0]})"
@@ -89,6 +106,33 @@ def get_emails_from_csv(args: argparse.Namespace) -> list[str]:
         exit(1)
 
     return emails
+
+
+def exclude_calling_licenses(licenses: list[str]) -> list[str]:
+    """
+    Exclude the calling licenses from the user.
+
+    :param licenses: list of licenses
+    :return: list of licenses
+    """
+    _licenses = []
+
+    if not licenses:
+        return []
+
+    for license in licenses:
+        if len(license) % 4 != 0:
+            license += "=" * (4 - len(license) % 4)
+
+        decoded_license = base64.b64decode(license).decode("utf-8")
+        print(decoded_license)
+
+        if "UCPREM_" in decoded_license or "BCSTD_" in decoded_license:
+            continue
+
+        _licenses.append(license)
+
+    return _licenses
 
 
 def disable_users_main(args: argparse.Namespace) -> None:
