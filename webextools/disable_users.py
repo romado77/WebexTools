@@ -8,6 +8,7 @@ import sys
 from datetime import datetime
 
 from webexteamssdk import ApiError, Person, WebexTeamsAPI
+from webexteamssdk.generator_containers import GeneratorContainer
 
 from webextools.helper import get_token, read_csv, verbose
 
@@ -80,7 +81,10 @@ def get_people(api: WebexTeamsAPI, emails: list[str]) -> list[Person]:
     :return: list of Person objects
     """
     try:
-        return [api.people.list(email=email) for email in emails]
+        people = [api.people.list(email=email) for email in emails]
+
+        return [list(person)[0] for person in people if isinstance(person, GeneratorContainer)]
+
     except ApiError as e:
         print("Error occurred while fetching user data. Error: ", e)
     except Exception as e:
