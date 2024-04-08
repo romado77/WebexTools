@@ -205,15 +205,6 @@ def dry_run(people: list[Person]) -> None:
         print(f"| {row['displayName']: <30} | {row['email']: <30} | {row['enabled']: ^22} |")
         print("-" * 82)
 
-        # for person in people:
-        #     if person.loginEnabled:
-        #         print(
-        #             f"Disabling user: {person.displayName} ({person.emails[0]}) [\033[92mLogin allowed\033[0m]"
-        #         )
-        #     else:
-        #         print(
-        #             f"Disabling user: {person.displayName} ({person.emails[0]}) [\033[91mLogin disabled\033[0m]"
-        #         )
     exit(0)
 
 
