@@ -152,7 +152,7 @@ def get_token() -> str:
         return token
 
     print()
-    token = getpass.getpass(" Enter your Webex API access token \U0001f511  : ")
+    token = getpass.getpass(" Enter your Webex API access token: ")
     print()
 
     if not token.strip():
