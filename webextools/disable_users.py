@@ -80,8 +80,7 @@ def get_people(api: WebexTeamsAPI, emails: list[str]) -> list[Person]:
     :return: list of Person objects
     """
     try:
-        users = api.people.list()
-        return [user for user in users if user.emails[0] in emails]
+        return [api.people.list(email=email) for email in emails]
     except ApiError as e:
         print("Error occurred while fetching user data. Error: ", e)
     except Exception as e:
@@ -97,9 +96,20 @@ def get_emails_from_csv(args: argparse.Namespace) -> list[str]:
     :param args: argparse.Namespace object
     :return: list of user emails
     """
+    emails = []
+
     email = args.column
     users = read_csv(args.file, email)
-    emails = [user[email] for user in users if user.get(email, "")]
+
+    for user in users:
+        if not user.get(email, ""):
+            continue
+
+        if "@" not in user[email]:
+            verbose(f"Invalid email address: {user[email]}")
+            continue
+
+        emails.append(user[email])
 
     if not emails:
         print(f"No users found in the column '{email}' of the CSV file.")
@@ -190,15 +200,16 @@ def dry_run(people: list[Person]) -> None:
     for row in data:
         print(f"| {row['displayName']: <30} | {row['email']: <30} | {row['enabled']: ^22} |")
         print("-" * 82)
-        # for person in people:
-        #     if person.loginEnabled:
-        #         print(
-        #             f"Disabling user: {person.displayName} ({person.emails[0]}) [\033[92mLogin allowed\033[0m]"
-        #         )
-        #     else:
-        #         print(
-        #             f"Disabling user: {person.displayName} ({person.emails[0]}) [\033[91mLogin disabled\033[0m]"
-        #         )
+
+        for person in people:
+            if person.loginEnabled:
+                print(
+                    f"Disabling user: {person.displayName} ({person.emails[0]}) [\033[92mLogin allowed\033[0m]"
+                )
+            else:
+                print(
+                    f"Disabling user: {person.displayName} ({person.emails[0]}) [\033[91mLogin disabled\033[0m]"
+                )
     exit(0)
 
 
