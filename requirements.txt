@@ -1,1 +1,2 @@
 webexteamssdk @ git+https://github.com/romado77/WebexPythonSDK.git
+httpx

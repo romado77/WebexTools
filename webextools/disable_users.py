@@ -1,92 +1,83 @@
 """This is module to disable Webex Teams users from the CSV file."""
 
 import argparse
-import base64
 import json
 import os
+import shutil
 import sys
 from datetime import datetime
 
-from webexteamssdk import ApiError, Person, WebexTeamsAPI
-from webexteamssdk.generator_containers import GeneratorContainer
+from webextools.helper import get_org_id_from_token, get_token, read_csv, verbose
+from webextools.scim import SCIM
+from webextools.users import User
 
-from webextools.helper import get_token, read_csv, verbose
+terminal_width = shutil.get_terminal_size().columns
 
 
-def disable_users(api: WebexTeamsAPI, people: list[Person]) -> list[dict]:
+def disable_users(api: SCIM, users: list[User]) -> list[dict]:
     """
     Disable the users in the Webex Teams.
 
-    :param api: WebexTeamsAPI object
+    :param api: SCIM API object
     :param people: list of Person objects
 
     :return: list of user status
     """
-    users = []
+    report = []
 
-    for person in people:
-        person_dict = json.loads(person.to_json())
+    for user in users:
+        status = {"id": user.id, "email": user.user_name, "updated": ""}
 
-        login_enabled = person_dict.get("loginEnabled", False)
-
-        status = {
-            "personId": person.id,
-            "displayName": person.displayName,
-            "email": person.emails[0],
-            "loginEnabled": login_enabled,
-        }
-
-        if not login_enabled:
+        if not user.active:
             verbose(
-                f"\033[93m[Skipped]\033[0m User is already disabled: {person.displayName} ({person.emails[0]})"
+                f"\033[93m[Skipped]\033[0m User is already disabled: {user.display_name} ({user.user_name})"
             )
-            status["update"] = "Skipped"
-            users.append(status)
+            status["updated"] = "Skipped"
+            report.append(status)
             continue
 
-        licenses = exclude_calling_licenses(person.licenses)
-
-        person_dict.update(
-            {"loginEnabled": False, "personId": person.id, "licenses": licenses, "phoneNumbers": []}
-        )
-
         try:
-            api.people.update(**person_dict)
-            verbose(
-                f"\033[92m[Success]\033[0m Disabling user: {person.displayName} ({person.emails[0]})"
+            response = api.update_user_patch(
+                user.id,
+                {
+                    "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+                    "Operations": [{"op": "replace", "value": {"active": False}}],
+                },
             )
-            status["update"] = "Success"
-            status["loginEnabled"] = False
-        except ApiError:
-            verbose(
-                f"\033[91m[Failed]\033[0m Unable to disable user: {person.displayName} ({person.emails[0]})"
-            )
-            status["update"] = "Failed"
+            if not isinstance(response, User) or response.active:
+                verbose(
+                    f"\033[91m[Failed]\033[0m Unable to disable user: {user.display_name} ({user.user_name})"
+                )
+                status["updated"] = "Failed"
+            else:
+                verbose(
+                    f"\033[92m[Success]\033[0m Disabling user: {user.display_name} ({user.user_name})"
+                )
+                status["updated"] = "Success"
+            report.append(status)
         except Exception as e:
             print("Internal error occurred. Error: ", e)
-            status["update"] = "Failed"
+            verbose(
+                f"\033[91m[Failed]\033[0m Unable to disable user: {user.display_name} ({user.user_name})"
+            )
+            verbose(f"Error: {e}")
+            status["updated"] = "Failed"
+            report.append(status)
 
-        users.append(status)
-
-    return users
+    return report
 
 
-def get_people(api: WebexTeamsAPI, emails: list[str]) -> list[Person]:
+def get_users(api: SCIM, emails: list[str]) -> list[User]:
     """
-    Get the people from the Webex Teams API.
+    Get the users from the Webex SCIM API.
 
-    :param api: WebexTeamsAPI object
+    :param api: SCIM API object
     :param emails: list of user emails
 
-    :return: list of Person objects
+    :return: list of User objects
     """
     try:
-        people = [api.people.list(email=email) for email in emails]
-
-        return [list(person)[0] for person in people if isinstance(person, GeneratorContainer)]
-
-    except ApiError as e:
-        print("Error occurred while fetching user data. Error: ", e)
+        return [user for user in api.get_users() if user.user_name in emails]
     except Exception as e:
         print("Internal error occurred. Error: ", e)
 
@@ -122,32 +113,6 @@ def get_emails_from_csv(args: argparse.Namespace) -> list[str]:
     return emails
 
 
-def exclude_calling_licenses(licenses: list[str]) -> list[str]:
-    """
-    Exclude the calling licenses from the user.
-
-    :param licenses: list of licenses
-    :return: list of licenses
-    """
-    _licenses = []
-
-    if not licenses:
-        return []
-
-    for license in licenses:
-        if len(license) % 4 != 0:
-            license += "=" * (4 - len(license) % 4)
-
-        decoded_license = base64.b64decode(license).decode("utf-8")
-
-        if "UCPREM_" in decoded_license or "BCSTD_" in decoded_license:
-            continue
-
-        _licenses.append(license)
-
-    return _licenses
-
-
 def disable_users_main(args: argparse.Namespace) -> None:
     """
     Main function to disable inactive Webex Teams users.
@@ -155,20 +120,21 @@ def disable_users_main(args: argparse.Namespace) -> None:
     :param args: argparse.Namespace object
     """
     token = get_token()
+    org_id = get_org_id_from_token(token)
 
-    api = WebexTeamsAPI(access_token=token)
+    api = SCIM(token=token, org_id=org_id)
 
     emails = get_emails_from_csv(args)
-    people = get_people(api, emails)
+    users = get_users(api, emails)
 
-    if not people:
+    if not users:
         print("No users found in the Webex Teams.")
         exit(1)
 
     if args.dry_run:
-        dry_run(people)
+        dry_run(users)
 
-    disabled_users = disable_users(api, people)
+    disabled_users = disable_users(api, users)
 
     if args.report:
         current_datetime = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -180,30 +146,53 @@ def disable_users_main(args: argparse.Namespace) -> None:
         print(f"\nReport written to {os.path.abspath(filename)}\n")
 
 
-def dry_run(people: list[Person]) -> None:
+def dry_run(users: list[User]) -> None:
     """
     Dry run to print the users data.
 
-    :param people: list of Person objects
+    :param users: list of User objects
     """
     print("\033[91m\nDry run mode is enabled, no users will be deleted!\n\033[0m")
 
-    data = [
-        {
-            "displayName": person.displayName,
-            "email": person.emails[0],
-            "enabled": "\033[92m\u2713\033[0m" if person.loginEnabled else "\033[91m\u2717\033[0m",
-        }
-        for person in people
-    ]
+    if terminal_width > 123:
+        data = [
+            {
+                "name": user.display_name,
+                "email": user.user_name,
+                "id": user.id,
+                "active": "\033[92m\u2713\033[0m" if user.active else "\033[91m\u2717\033[0m",
+            }
+            for user in users
+        ]
 
-    print("-" * 82)
-    print("| {:^30} | {:^30} | {:^12} |".format("User name", "Email", "Login Allowed"))
-    print("-" * 82)
+        print("-" * 124)
+        print("| {:^30} | {:^30} | {:^40} | {:^12}|".format("Username", "Email", "ID", "Active"))
+        print("-" * 124)
 
-    for row in data:
-        print(f"| {row['displayName']: <30} | {row['email']: <30} | {row['enabled']: ^22} |")
-        print("-" * 82)
+        for row in data:
+            print(
+                f"| {row['name']: <30} | {row['email']: <30} | {row['id']: ^40} | {row['active']: ^20} |"
+            )
+            print("-" * 124)
+    else:
+        data = [
+            {
+                "name": user.display_name
+                if len(user.display_name) < 28
+                else user.display_name[:25] + "...",
+                "email": user.user_name if len(user.user_name) < 28 else user.user_name[:25] + "...",
+                "active": "\033[92m\u2713\033[0m" if user.active else "\033[91m\u2717\033[0m",
+            }
+            for user in users
+        ]
+
+        print("-" * 78)
+        print("| {:^28} | {:^28} | {:^12} |".format("Username", "Email", "Active"))
+        print("-" * 78)
+
+        for row in data:
+            print(f"| {row['name']: <28} | {row['email']: <28} | {row['active']: ^22} |")
+            print("-" * 78)
 
     exit(0)
 

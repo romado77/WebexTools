@@ -1,8 +1,11 @@
 import csv
 import getpass
 import os
+import uuid
 from datetime import datetime, timedelta
 from typing import Optional
+
+from webextools.settings import DEFAULT_BASE_URL
 
 WEBEX_BASE_URL = "https://webexapis.com/v1/"
 RESOURCE_URIS = {
@@ -22,6 +25,16 @@ def verbose(message: str) -> None:
         print(message)
 
 
+def debug(message: str) -> None:
+    """
+    Log the message to the console if the DEBUG environment variable is set.
+
+    :param message: message to log
+    """
+    if os.getenv("DEBUG") is not None:
+        print(message)
+
+
 def get_url(resource: str, *params):
     """
     Get URL for the specified resource.
@@ -35,9 +48,9 @@ def get_url(resource: str, *params):
         return
 
     if params:
-        return WEBEX_BASE_URL + RESOURCE_URIS[resource] + "/" + "/".join(params)
+        return DEFAULT_BASE_URL + "/" + RESOURCE_URIS[resource] + "/" + "/".join(params)
 
-    return WEBEX_BASE_URL + RESOURCE_URIS[resource]
+    return DEFAULT_BASE_URL + "/" + RESOURCE_URIS[resource]
 
 
 def read_csv(filename: str, columns: Optional[list]) -> list:
@@ -161,3 +174,19 @@ def get_token() -> str:
         get_token()
 
     return token.strip()
+
+
+def get_org_id_from_token(token: str) -> str:
+    """
+    Get the organization ID from the Webex API access token.
+
+    :param token: Webex API access token
+    :return: Organization ID
+    """
+    if "_" not in token:
+        return ""
+
+    parts = token.split("_")
+    org_id = parts[-1]
+
+    return org_id if uuid.UUID(org_id) else ""
