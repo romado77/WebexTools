@@ -41,18 +41,48 @@ class Session:
             self.params["headers"] = {"Authorization": authorization}
 
     def get(self, url: str, **kwargs):
+        """
+        Make a GET request.
+
+        :param url: URL to make the request
+        :param kwargs: additional arguments to pass to the request
+        """
         return self.request("GET", url, **kwargs)
 
     def post(self, url: str, **kwargs):
+        """
+        Make a POST request.
+
+        :param url: URL to make the request
+        :param kwargs: additional arguments to pass to the request
+        """
         return self.request("POST", url, **kwargs)
 
     def put(self, url: str, **kwargs):
+        """
+        Make a PUT request.
+
+        :param url: URL to make the request
+        :param kwargs: additional arguments to pass to the request
+        """
         return self.request("PUT", url, **kwargs)
 
     def delete(self, url: str, **kwargs):
+        """
+        Make a DELETE request.
+
+        :param url: URL to make the request
+        :param kwargs: additional arguments to pass to the request
+        """
         return self.request("DELETE", url, **kwargs)
 
     def patch(self, url: str, **kwargs):
+        """
+        Make a PATCH request.
+
+        :param url: URL to make the request
+        :param kwargs: additional arguments to pass to the request
+        """
         return self.request("PATCH", url, **kwargs)
 
     def request(self, method: str, url: str, **params) -> httpx.Response:
@@ -101,8 +131,10 @@ class Session:
                     time.sleep(err.retry_after)
                     retries = retries + 1
                 except httpx.HTTPError as err:
-                    debug(f"An error occurred while requesting {err.request.url!r}.")
-                    return err.response
+                    debug(
+                        f"An error occurred while requesting URL: {err.request.url}, error: {err.response.status_code}",
+                    )
+                    return err
 
     def normalize_url(self, url: str) -> str:
         """

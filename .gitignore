@@ -4,3 +4,4 @@ __pycache__/
 csv/
 *.csv
 *.json
+*.egg-info/
