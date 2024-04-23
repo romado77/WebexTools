@@ -17,7 +17,7 @@ classifiers = [
 ]
 requires-python = ">=3.9"
 dependencies = [
-    "webexteamssdk @ git+https://github.com/romado77/WebexPythonSDK.git"
+    "webexteamssdk @ git+https://github.com/romado77/WebexPythonSDK.git",
     "httpx",
 ]
 
