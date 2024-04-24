@@ -24,7 +24,14 @@ def main():
         help="Write the report to the file",
     )
 
-    disable_users_parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
+    disable_users_parser.add_argument(
+        "-v",
+        "--verbose",
+        action="count",
+        default=0,
+        help="Verbose output (can be specified multiple times)",
+    )
+
     disable_users_parser.add_argument("--dry-run", "-d", action="store_true", help="Dry run mode")
     disable_users_parser.set_defaults(func=disable_users_main)
 
@@ -48,14 +55,22 @@ def main():
     )
 
     recording_report_parser.add_argument(
-        "--verbose", "-v", action="store_true", help="Verbose output"
+        "-v",
+        "--verbose",
+        action="count",
+        default=0,
+        help="Verbose output (can be specified multiple times)",
     )
     recording_report_parser.set_defaults(func=recording_report_main)
 
     args = parser.parse_args()
 
-    if args.verbose:
+    if args.verbose == 1:
         os.environ["VERBOSE"] = "1"
+
+    if args.verbose > 1:
+        os.environ["VERBOSE"] = "1"
+        os.environ["DEBUG"] = "1"
 
     args.func(args)
 

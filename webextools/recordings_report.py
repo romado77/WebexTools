@@ -1,4 +1,5 @@
-""" This is module to generate a report of Webex Teams users who requested recording data. """
+"""This is module to generate a report of Webex Teams users who requested recording data."""
+
 import argparse
 import json
 import os
@@ -6,7 +7,8 @@ import sys
 
 from webexteamssdk import ApiError, WebexTeamsAPI
 
-from webextools.helper import generate_time_ranges, get_token, write_csv
+from webextools.helper import error, generate_time_ranges, prompt_token, write_csv
+from webextools.http import Session
 
 
 def get_recording_report(api: WebexTeamsAPI, _from: str, to: str):
@@ -42,38 +44,6 @@ def get_detailed_report(api: WebexTeamsAPI, recording_id: str) -> dict:
     except ApiError as e:
         print(e)
         sys.exit(1)
-
-
-def parse_arguments():
-    """
-    Parse the command line arguments.
-
-    :return: The parsed arguments.
-    """
-    parser = argparse.ArgumentParser(description="Recording audit report")
-    parser.add_argument(
-        "--period",
-        "-p",
-        type=int,
-        default=90,
-        help="Recording report period in days (default 90 days, max 365 days)",
-    )
-    parser.add_argument(
-        "--write",
-        "-w",
-        type=str,
-        metavar="FILENAME",
-        help="Specify the file name to write the report",
-    )
-
-    parser.add_argument(
-        "--verbose",
-        "-v",
-        action="store_true",
-        help="Print detailed information",
-    )
-
-    return parser.parse_args()
 
 
 def prepare_detailed_report_from_summary(api: WebexTeamsAPI, recording: dict):
@@ -129,10 +99,10 @@ def recording_report_main(args: argparse.Namespace):
     detailed_report = []
 
     if args.period > 365:
-        print("Error: Invalid value for period. The maximum value for period is 365 days.")
+        error("Invalid value for period. The maximum value for period is 365 days.")
         sys.exit(1)
 
-    token = get_token()
+    token = prompt_token()
 
     api = WebexTeamsAPI(access_token=token)
 
@@ -161,6 +131,48 @@ def recording_report_main(args: argparse.Namespace):
 
     if os.getenv("VERBOSE") is not None:
         print(json.dumps(detailed_report, indent=4))
+
+
+def parse_arguments():
+    """
+    Parse the command line arguments.
+
+    :return: The parsed arguments.
+    """
+    parser = argparse.ArgumentParser(description="Recording audit report")
+    parser.add_argument(
+        "--period",
+        "-p",
+        type=int,
+        default=90,
+        help="Recording report period in days (default 90 days, max 365 days)",
+    )
+    parser.add_argument(
+        "--write",
+        "-w",
+        type=str,
+        metavar="FILENAME",
+        help="Specify the file name to write the report",
+    )
+
+    parser.add_argument(
+        "-v",
+        "--version",
+        action="count",
+        default=0,
+        help="Verbose output (can be specified multiple times)",
+    )
+
+    args = parser.parse_args()
+
+    if args.verbose == 1:
+        os.environ["VERBOSE"] = "1"
+
+    if args.verbose > 1:
+        os.environ["VERBOSE"] = "1"
+        os.environ["DEBUG"] = "1"
+
+    return args
 
 
 if __name__ == "__main__":

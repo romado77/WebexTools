@@ -1,18 +1,13 @@
 import csv
 import getpass
+import json
 import os
+import sys
 import uuid
 from datetime import datetime, timedelta
 from typing import Optional
 
-from webextools.settings import DEFAULT_BASE_URL
-
-WEBEX_BASE_URL = "https://webexapis.com/v1/"
-RESOURCE_URIS = {
-    "people": "people",
-    "pmr": "meetingPreferences/personalMeetingRoom",
-    "reports": "reports",
-}
+from webextools.settings import DEFAULT_BASE_URL, RESOURCE_URIS
 
 
 def verbose(message: str) -> None:
@@ -33,6 +28,40 @@ def debug(message: str) -> None:
     """
     if os.getenv("DEBUG") is not None:
         print(message)
+
+
+def error(message: str, exc: Optional[Exception] = None) -> None:
+    """
+    Log the error message to the console.
+
+    :param message: error message
+    :param exc: exception
+    """
+    print(f"\033[91m{message}\033[0m")
+
+    if not isinstance(exc, Exception):
+        return
+
+    if hasattr(exc, "response"):
+        status_code = exc.response.status_code
+        reason_phrase = exc.response.reason_phrase
+
+        text = json.loads(exc.response.text)
+
+        message = text.get("message", "")
+        tracking_id = text.get("trackingId", "")
+
+        if message:
+            err_message = f"\nError: {status_code} ({reason_phrase}) - {message}\n"
+        else:
+            err_message = f"\nError: {status_code} ({reason_phrase})\n"
+
+        if os.getenv("DEBUG") is not None:
+            err_message += f"Tracking ID: {tracking_id}"
+    else:
+        err_message = f"\nError: {str(exc)}\n"
+
+    print(err_message, "\n")
 
 
 def get_url(resource: str, *params):
@@ -98,7 +127,7 @@ def write_csv(data: list[dict], csv_filename) -> str:
             writer.writeheader()
             writer.writerows(data)
     except Exception as e:
-        print("Error writing to CSV file:", e)
+        error("Error writing to CSV file:", e)
         return ""
 
     return csv_filename
@@ -153,9 +182,9 @@ def generate_time_ranges(total_days: int = 0, span: int = 0) -> list:
     return time_ranges
 
 
-def get_token() -> str:
+def prompt_token() -> str:
     """
-    Get the Webex API access token.
+    Prompt the Webex API access token.
 
     :return: Webex API access token
     """
@@ -169,9 +198,9 @@ def get_token() -> str:
     print()
 
     if not token.strip():
-        print("Invalid token provided.")
+        print("Invalid token provided, token cannot be empty.")
 
-        get_token()
+        prompt_token()
 
     return token.strip()
 
@@ -182,11 +211,18 @@ def get_org_id_from_token(token: str) -> str:
 
     :param token: Webex API access token
     :return: Organization ID
+
+    :raises: ValueError if the token is invalid
     """
     if "_" not in token:
-        return ""
+        print("Invalid Webex API access token.")
+        sys.exit(1)
 
     parts = token.split("_")
     org_id = parts[-1]
 
-    return org_id if uuid.UUID(org_id) else ""
+    if not uuid.UUID(org_id):
+        print("Invalid organization ID.")
+        sys.exit(1)
+
+    return org_id

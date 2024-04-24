@@ -130,11 +130,16 @@ class Session:
 
                     time.sleep(err.retry_after)
                     retries = retries + 1
-                except httpx.HTTPError as err:
+                except httpx.RequestError as err:
+                    debug(
+                        f"An error occurred while requesting URL: {err.request.url}, error: {err}",
+                    )
+                    raise err
+                except httpx.HTTPStatusError as err:
                     debug(
                         f"An error occurred while requesting URL: {err.request.url}, error: {err.response.status_code}",
                     )
-                    return err
+                    raise err
 
     def normalize_url(self, url: str) -> str:
         """

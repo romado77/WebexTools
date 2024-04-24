@@ -1,5 +1,6 @@
 from typing import Optional
 
+from webextools.helper import error
 from webextools.http import Session
 from webextools.settings import DEFAULT_IDENTITY_URL
 from webextools.users import User
@@ -27,7 +28,7 @@ class SCIM:
         org_id = org_id or self.org_id
 
         if not org_id:
-            raise ValueError("Organization ID is required")
+            error("SCIM [get_users] - Organization ID is required")
 
         while True:
             url = f"scim/{org_id}/v2/Users"

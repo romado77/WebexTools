@@ -7,7 +7,7 @@ import shutil
 import sys
 from datetime import datetime
 
-from webextools.helper import get_org_id_from_token, get_token, read_csv, verbose
+from webextools.helper import error, get_org_id_from_token, prompt_token, read_csv, verbose
 from webextools.scim import SCIM
 from webextools.users import User
 
@@ -56,11 +56,11 @@ def disable_users(api: SCIM, users: list[User]) -> list[dict]:
                 status["updated"] = "Success"
             report.append(status)
         except Exception as e:
-            print("Internal error occurred. Error: ", e)
             verbose(
                 f"\033[91m[Failed]\033[0m Unable to disable user: {user.display_name} ({user.user_name})"
             )
-            verbose(f"Error: {e}")
+            error("Internal error occurred", e)
+
             status["updated"] = "Failed"
             report.append(status)
 
@@ -78,10 +78,9 @@ def get_users(api: SCIM, emails: list[str]) -> list[User]:
     """
     try:
         return [user for user in api.get_users() if user.user_name in emails]
-    except Exception as e:
-        print("Internal error occurred. Error: ", e)
-
-    sys.exit(1)
+    except Exception as err:
+        error("Failed to get users from the organization", err)
+        sys.exit(1)
 
 
 def get_emails_from_csv(args: argparse.Namespace) -> list[str]:
@@ -107,8 +106,8 @@ def get_emails_from_csv(args: argparse.Namespace) -> list[str]:
         emails.append(user[email])
 
     if not emails:
-        print(f"No users found in the column '{email}' of the CSV file.")
-        exit(1)
+        error(f"No users found in the column '{email}' of the CSV file.")
+        sys.exit(1)
 
     return emails
 
@@ -119,7 +118,7 @@ def disable_users_main(args: argparse.Namespace) -> None:
 
     :param args: argparse.Namespace object
     """
-    token = get_token()
+    token = prompt_token()
     org_id = get_org_id_from_token(token)
 
     api = SCIM(token=token, org_id=org_id)
@@ -128,8 +127,8 @@ def disable_users_main(args: argparse.Namespace) -> None:
     users = get_users(api, emails)
 
     if not users:
-        print("No users found in the Webex Teams.")
-        exit(1)
+        error("No users, from CSV file, found in organization")
+        sys.exit(1)
 
     if args.dry_run:
         dry_run(users)
@@ -207,12 +206,24 @@ def parse_args():
         action="store_true",
         help="Write the report to the file",
     )
-    parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
 
-    if args.verbose:
+    parser.add_argument(
+        "-v",
+        "--version",
+        action="count",
+        default=0,
+        help="Verbose output (can be specified multiple times)",
+    )
+    args = parser.parse_args()
+
+    if args.verbose == 1:
         os.environ["VERBOSE"] = "1"
 
-    return parser.parse_args()
+    if args.verbose > 1:
+        os.environ["VERBOSE"] = "1"
+        os.environ["DEBUG"] = "1"
+
+    return args
 
 
 if __name__ == "__main__":
