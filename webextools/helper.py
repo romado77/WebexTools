@@ -5,19 +5,21 @@ import os
 import sys
 import uuid
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Any, Optional
 
 from webextools.settings import DEFAULT_BASE_URL, RESOURCE_URIS
 
 
-def verbose(message: str) -> None:
+def verbose(message: Any) -> None:
     """
     Log the message to the console if the VERBOSE environment variable is set.
 
     :param message: message to log
     """
-    if os.getenv("VERBOSE") is not None:
-        print(message)
+    if os.getenv("VERBOSE") is None:
+        return
+
+    print(f"[\033[96mVERBOSE\033[0m] {message}")
 
 
 def debug(message: str) -> None:
@@ -27,7 +29,7 @@ def debug(message: str) -> None:
     :param message: message to log
     """
     if os.getenv("DEBUG") is not None:
-        print(message)
+        print(f"[\033[94mDEBUG\033[0m] {message}")
 
 
 def error(message: str, exc: Optional[Exception] = None) -> None:
@@ -203,6 +205,35 @@ def prompt_token() -> str:
         prompt_token()
 
     return token.strip()
+
+
+def prompt_proxy_credentials() -> tuple[str, str]:
+    """Prompt for username and password for the proxy server."""
+
+    print("Proxy server was detected.")
+
+    username = os.environ.get("HTTP_PROXY_USERNAME")
+    password = os.environ.get("HTTP_PROXY_PASSWORD")
+
+    if username and password:
+        return username, password
+
+    print("Please provide the proxy credentials.\n")
+
+    if username:
+        return username, getpass.getpass(" Enter proxy server password: ")
+
+    print()
+    username = input(" Enter proxy server username: ")
+    password = getpass.getpass(" Enter proxy server password: ")
+    print()
+
+    if not username.strip():
+        print("Invalid username provided, username cannot be empty.")
+
+        prompt_proxy_credentials()
+
+    return username.strip(), password
 
 
 def get_org_id_from_token(token: str) -> str:

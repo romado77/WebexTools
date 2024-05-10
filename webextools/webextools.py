@@ -66,7 +66,7 @@ def main():
     args = parser.parse_args()
 
     if args.verbose == 1:
-        os.environ["VERBOSE"] = "1"
+        os.environ["DEBUG"] = "1"
 
     if args.verbose > 1:
         os.environ["VERBOSE"] = "1"

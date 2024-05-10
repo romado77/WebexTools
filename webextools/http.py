@@ -1,17 +1,24 @@
+import json
 import time
 from http import HTTPStatus
 from urllib.parse import urlparse
 
 import httpx
 
-from webextools.helper import debug, verbose
+from webextools.helper import debug, prompt_proxy_credentials, verbose
 from webextools.settings import DEFAULT_BASE_URL
 
 
 class RateLimit(Exception):
+    """API rate limit exceeded."""
+
     def __init__(self, url: str, retry_after: int):
         self.url = url
         self.retry_after = retry_after
+
+
+class ProxyAuthenticationRequired(Exception):
+    """Proxy authentication required."""
 
 
 class Session:
@@ -99,11 +106,20 @@ class Session:
         """
         retries = 0
 
-        while retries <= self.max_retries and url:
-            with httpx.Client(**self.params) as client:
+        with httpx.Client(**self.params) as client:
+            while retries <= self.max_retries and url:
                 try:
                     response = client.request(method, self.normalize_url(url), **params)
                     debug(f"Request URL: {response.request.url}")
+                    verbose(f"Request: {response.request.method} {response.request.url}")
+                    verbose(
+                        f"Request headers: {json.dumps(dict(response.request.headers), indent=2)}"
+                    )
+
+                    print()
+
+                    verbose(f"Response: {response.status_code}")
+                    verbose(f"Response headers: {json.dumps(dict(response.headers), indent=2)}")
 
                     self.process_response(response)
 
@@ -129,6 +145,12 @@ class Session:
                     )
 
                     time.sleep(err.retry_after)
+                    retries = retries + 1
+                except ProxyAuthenticationRequired:
+                    username, password = prompt_proxy_credentials()
+                    self.params["headers"]["Proxy-Authorization"] = httpx.BasicAuth(
+                        username, password
+                    )
                     retries = retries + 1
                 except httpx.RequestError as err:
                     debug(
@@ -174,9 +196,12 @@ class Session:
             HTTPStatus.ACCEPTED,
             HTTPStatus.NO_CONTENT,
         ):
+            debug("Request successful")
             return
 
         if response.status_code == HTTPStatus.TOO_MANY_REQUESTS:
             raise RateLimit(response.url, int(response.headers.get("Retry-After", 15)))
+        if response.status_code == HTTPStatus.PROXY_AUTHENTICATION_REQUIRED:
+            raise ProxyAuthenticationRequired()
 
         response.raise_for_status()
