@@ -67,9 +67,9 @@ def disable_users(api: SCIM, users: list[User]) -> list[dict]:
     return report
 
 
-def get_users(api: SCIM, emails: list[str]) -> list[User]:
+def get_user(api: SCIM, email: str) -> User:
     """
-    Get the users from the Webex SCIM API.
+    Get the user from the Webex SCIM API.
 
     :param api: SCIM API object
     :param emails: list of user emails
@@ -77,9 +77,9 @@ def get_users(api: SCIM, emails: list[str]) -> list[User]:
     :return: list of User objects
     """
     try:
-        return [user for user in api.get_users() if user.user_name in emails]
+        return api.get_users(filter=f'userName eq "{email}"')
     except Exception as err:
-        error("Failed to get users from the organization", err)
+        error(f"Failed to get user with email {email}", err)
         sys.exit(1)
 
 
@@ -124,7 +124,8 @@ def disable_users_main(args: argparse.Namespace) -> None:
     api = SCIM(token=token, org_id=org_id)
 
     emails = get_emails_from_csv(args)
-    users = get_users(api, emails)
+    # users = get_users(api, emails)
+    users = [next(get_user(api, email)) for email in emails]
 
     if not users:
         error("No users, from CSV file, found in organization")

@@ -14,7 +14,7 @@ class SCIM:
         )
         self.org_id = org_id
 
-    def get_users(self, org_id: str = ""):
+    def get_users(self, org_id: str = "", filter: str = ""):
         """
         Get all users in an organization.
 
@@ -30,8 +30,12 @@ class SCIM:
         if not org_id:
             error("SCIM [get_users] - Organization ID is required")
 
+        url = f"scim/{org_id}/v2/Users"
+
+        if filter:
+            url += f"?filter={filter}"
+
         while True:
-            url = f"scim/{org_id}/v2/Users"
             params = {"startIndex": next_index}
 
             if items_per_page:
